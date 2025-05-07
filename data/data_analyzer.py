@@ -90,7 +90,7 @@ def data_stats(corpus_path, opath):
 
 
 if __name__ == '__main__':
-    dlist = ['diabetes', 'mimic-iii']  # 'diabetes', 'mimic-iii'
+    dlist = ['mimic-iii']  # 'diabetes', 'mimic-iii'
     odir = '../resources/analyze/'
     indir = './processed_data/'
     if not os.path.exists(odir):

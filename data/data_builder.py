@@ -22,10 +22,9 @@ import argparse
 import numpy as np
 import pandas as pd
 from nltk.tokenize import word_tokenize, sent_tokenize
-from pymetamap import Corpus, CorpusLite
 from pymetamap import MetaMap
 # from pymetamap import MetaMapLite
-from keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.text import Tokenizer
 from pandarallel import pandarallel
 from tqdm import tqdm
 
@@ -1018,7 +1017,7 @@ def get_concept_thread(input_text):
     # parameters documentation: https://metamap.nlm.nih.gov/Docs/MM_2016_Usage.pdf
     # https://metamap.nlm.nih.gov/Docs/README_javaapi.shtml
     row_id, input_text, uid = input_text
-    if os.path.exists(os.environ['CONCEPT_ODIR'] + '{}.pkl'.format(row_id)):
+    if os.path.exists(os.environ['CONCEPT_ODIR'] + '{}_{}.pkl'.format(uid, row_id)):
         return
     collection = sent_tokenize(input_text)
     step_size = 5
@@ -1032,6 +1031,7 @@ def get_concept_thread(input_text):
     for step in tqdm(range(steps)):
         step_collection = collection[step * step_size: (step + 1) * step_size]
         try:
+            #print(f"step_collection {step_collection}")
             # concepts = metamap_concepts(
             concepts, error = mm.extract_concepts(
                 sentences=step_collection,
@@ -1039,17 +1039,22 @@ def get_concept_thread(input_text):
                 unique_acronym_variants=True,
                 ignore_stop_phrases=True,
                 no_derivational_variants=True,
-                no_nums=['all'],
-                exclude_sts=[
-                    'bpoc', 'spco', 'lang', 'npop', 'orgf', 'qnco', 'tmco', 'hlca', 'idcn', 'hcro', 'clna',
-                    'ftcn', 'qlco', 'fndg', 'acty', 'mnob', 'plnt', 'podg', 'popg', 'prog', 'pros', 'elii',
-                    'anim', 'inpr', 'food'
-                ],
+                #no_nums=['all'],
+                #exclude_sts=[
+                #    'bpoc', 'spco', 'lang', 'npop', 'orgf', 'qnco', 'tmco', 'hlca', 'idcn', 'hcro', 'clna',
+                #    'ftcn', 'qlco', 'fndg', 'acty', 'mnob', 'plnt', 'podg', 'popg', 'prog', 'pros', 'elii',
+                #    'anim', 'inpr', 'food'
+                #],
                 # for metamap lite only
                 # restrict_to_sts=[],
             )
+            #print(f"step_collection--> concepts {concepts}")
             if concepts:
                 concepts_collection.extend(process_concepts(concepts))
+             
+            #print(f"step_collection-->concepts-->concepts_collection {concepts_collection}")
+            
+            
         except IndexError:
             pass
             # try:
@@ -1112,8 +1117,8 @@ def extract_concepts_sequential(notes_df):
 
 def extract_concepts_parallel(notes_df):
     # get list of row_id and text pairs
-    texts = list(notes_df.TEXT.iteritems())
-    uids = list(notes_df.SUBJECT_ID.iteritems())
+    texts = list(notes_df.TEXT.items())
+    uids = list(notes_df.SUBJECT_ID.items()) #(44005, '3'), (4788, '4'), (20825, '6'),
     # filter out blank lines
     texts = [
         [item[0], item[1], uids[idx][1]] for idx, item in enumerate(texts)
@@ -1216,27 +1221,60 @@ def process_mimic(indir, odir):
     for tmp_key in dfile:
         for tmp_code in dfile[tmp_key]['codes']:
             icd_encoder[tmp_code] = tmp_key
-
+    
     dfcodes = dict()
     hadm_set = set(notes.HADM_ID)
+    diagnosis_icd_hadm_set = set()
     with open(indir + 'DIAGNOSES_ICD.csv') as dfile:
         cols = [col.replace('"', '').strip() for col in dfile.readline().strip().split(',')]
         icd_idx = cols.index('ICD9_CODE')
         subj_idx = cols.index('SUBJECT_ID')
         hadm_idx = cols.index('HADM_ID')
 
+        counterLineNotEqual = 0 
+        counterNotInPatient = 0
+        counterNotInHadm = 0
+        counterTotal = 0
+        counterIcdCodeNotInEncoder = 0
+
         for line in dfile:
+            counterTotal+=1
             line = [item.replace('"', '').strip() for item in line.strip().split(',')]
             if len(line) != len(cols):
+                counterLineNotEqual+=1
                 continue
             if line[subj_idx] not in patient_set:
+                counterNotInPatient+=1
                 continue
             if line[hadm_idx] not in hadm_set:
+                diagnosis_icd_hadm_set.add(line[hadm_idx])
+                counterNotInHadm+=1
+                continue 
+            if line[icd_idx].strip() not in icd_encoder.keys():
+                counterIcdCodeNotInEncoder+=1
                 continue
+            
             code_id = '{0}-{1}'.format(line[subj_idx], line[hadm_idx])
             if code_id not in dfcodes:
                 dfcodes[code_id] = list()
             dfcodes[code_id].append(icd_encoder.get(line[icd_idx].strip()))
+    
+    print(f"diagnosis stats: {counterTotal} total lines {counterNotInPatient} patients not in patient set, {counterNotInHadm} hadm not in hadm set, {counterLineNotEqual} lines not equal, {counterIcdCodeNotInEncoder} icd code not in encoder")
+    print(f"size of dfcodes: {len(dfcodes)}")
+
+    with open('./processed_data/mimic-iii/hadm_id_set.json','w') as dfile:
+        for id in hadm_set:
+            dfile.write(f"{id},")
+
+    with open('./processed_data/mimic-iii/diagnosis_icd_hadm_id_set.json','w') as dfile:
+        for id in diagnosis_icd_hadm_set:
+            dfile.write(f"{id},")
+ 
+    with open('./processed_data/mimic-iii/icd_encoder.json','w') as dfile:
+         dfile.write(json.dumps(icd_encoder)) 
+
+    with open('./processed_data/mimic-iii/dfcodes.json','w') as dfile:
+         dfile.write(json.dumps(dfcodes)) 
 
     # extract concepts from the notes
     notes_concepts_dir = os.environ['CONCEPT_ODIR']
@@ -1258,7 +1296,7 @@ def process_mimic(indir, odir):
     print('Processing each row...')
     results = dict()
     for index, row in notes.iterrows():
-        uid = row['SUBJECT_ID'] + '-' + row['HADM_ID']
+        uid = f"{row['SUBJECT_ID']}-{row['HADM_ID']}"
         if uid not in results:
             results[uid] = {
                 'uid': uid,
@@ -1275,10 +1313,14 @@ def process_mimic(indir, odir):
             'doc_id': index,
             'date': row['CHARTDATE'].strftime('%Y-%m-%d'),
             'text': row['TEXT'],
-            'tags': dfcodes[uid],
+            'tags': dfcodes.get(uid,list()),
         })
-        results[uid]['tags_set'].update(dfcodes[uid])
-        results[uid]['tags'].extend(dfcodes[uid])
+        results[uid]['tags_set'].update(dfcodes.get(uid, set()))
+        results[uid]['tags'].extend(dfcodes.get(uid, list()))
+    
+
+    
+
 
     opath = os.path.join(odir, 'mimic-iii.json')
     with open(opath, 'w') as wfile:
@@ -1297,7 +1339,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # flist = ['amazon', 'diabetes', 'mimic']
-    output_dir = 'processed_data/'
+    output_dir = './processed_data/'
     os.environ['METAMAP_HOME'] = args.metamap_home
 
     # amazon health dataset
@@ -1307,11 +1349,11 @@ if __name__ == '__main__':
     # process_amazon(amazon_indir, output_dir + 'amazon/')
 
     # diabetes
-    diabetes_indir = './raw_data/diabetes/all/'
-    os.environ['CONCEPT_ODIR'] = './processed_data/{}/concepts/'.format('diabetes')
-    if not os.path.exists(output_dir + 'diabetes/'):
-        os.mkdir(output_dir + 'diabetes/')
-    process_diabetes(diabetes_indir, output_dir + 'diabetes/')
+    #diabetes_indir = './raw_data/diabetes/all/'
+    #os.environ['CONCEPT_ODIR'] = './processed_data/{}/concepts/'.format('diabetes')
+    #if not os.path.exists(output_dir + 'diabetes/'):
+    #    os.mkdir(output_dir + 'diabetes/')
+    #process_diabetes(diabetes_indir, output_dir + 'diabetes/')
 
     # mimic-iii
     # '/data/xxx/physionet.org/files/mimiciii/1.4/'

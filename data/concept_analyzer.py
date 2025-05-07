@@ -417,7 +417,7 @@ def quant_concepts_sim(**kwargs):
 
 if __name__ == '__main__':
     dname = sys.argv[1]
-    dlist = ['diabetes', 'mimic-iii']  # 'diabetes', 'mimic-iii'
+    dlist = ['mimic-iii']  # 'diabetes', 'mimic-iii'
     classifier = sys.argv[2] if len(sys.argv) > 2 else 'mlp'
     if classifier not in ['mlp', 'dt', 'knn']:
         print('Error, {} classifier is not supported'.format(classifier))
