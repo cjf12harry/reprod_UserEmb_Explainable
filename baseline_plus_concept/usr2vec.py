@@ -221,7 +221,7 @@ def build_emb_layer(tokenizer, emb_path, save_path):
             emb_path, binary=True
         )
         emb_model = np.zeros((emb_len, w2v_model.vector_size))
-        for pair in zip(w2v_model.index2word, w2v_model.vectors):
+        for pair in zip(w2v_model.index_to_key, w2v_model.vectors):
             if pair[0] in tokenizer.word_index and \
                     tokenizer.word_index[pair[0]] < tokenizer.num_words:
                 emb_model[tokenizer.word_index[pair[0]]] = pair[1]

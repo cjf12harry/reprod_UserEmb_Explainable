@@ -41,7 +41,7 @@ class Word2User(object):
             w2v_model = gensim.models.KeyedVectors.load_word2vec_format(
                 modelPath, binary=True
             )
-            for pair in zip(w2v_model.wv.index2word, w2v_model.wv.syn0):
+            for pair in zip(w2v_model.wv.index_to_key, w2v_model.wv.syn0):
                 if pair[0] in self.tkn.word_index and \
                         self.tkn.word_index[pair[0]] < self.tkn.num_words:
                     model[self.tkn.word_index[pair[0]]] = pair[1]

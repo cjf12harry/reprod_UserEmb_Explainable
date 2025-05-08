@@ -129,7 +129,7 @@ def build_emb_weights(tokenizer, emb_path, save_path):
             emb_path, binary=True
         )
         emb_model = np.zeros((emb_len, w2v_model.vector_size))
-        for pair in zip(w2v_model.index2word, w2v_model.vectors):
+        for pair in zip(w2v_model.index_to_key, w2v_model.vectors):
             if pair[0] in tokenizer.word_index and \
                     tokenizer.word_index[pair[0]] < tokenizer.num_words:
                 emb_model[tokenizer.word_index[pair[0]]] = pair[1]
@@ -701,7 +701,7 @@ if __name__ == '__main__':
         'odir': odir,
         'user_stats_path': data_dir + 'user_encoder.json',
         'concept_dir': data_dir + 'concepts/',
-        'emb_path': '/data/models/BioWordVec_PubMed_MIMICIII_d200.vec.bin',
+        'emb_path': '/home/ubuntu/code/cs598/UserEmb_Explainable/data/models/BioWordVec_PubMed_MIMICIII_d200.vec.bin',
         'word_emb_train': True,
         'word_emb_path': odir + 'word_emb.npy'.format(args.dname),
         'user_emb_path': odir + 'user_emb.npy'.format(args.dname),

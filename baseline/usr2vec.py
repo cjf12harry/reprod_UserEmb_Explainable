@@ -172,7 +172,7 @@ def build_emb_layer(tokenizer, emb_path, save_path):
             emb_path, binary=True
         )
         emb_model = np.zeros((emb_len, w2v_model.vector_size))
-        for pair in zip(w2v_model.index2word, w2v_model.vectors):
+        for pair in zip(w2v_model.index_to_key, w2v_model.vectors):
             if pair[0] in tokenizer.word_index and \
                     tokenizer.word_index[pair[0]] < tokenizer.num_words:
                 emb_model[tokenizer.word_index[pair[0]]] = pair[1]
@@ -225,7 +225,7 @@ def main(data_name, encode_directory, odirectory='../resources/'):
         'vocab_size': tok.num_words,
         'user_size': -1,  # +1 for unknown
         'emb_dim': 300,
-        'emb_path': '/data/models/BioWordVec_PubMed_MIMICIII_d200.vec.bin',
+        'emb_path': '/home/ubuntu/code/cs598/UserEmb_Explainable/data/models/BioWordVec_PubMed_MIMICIII_d200.vec.bin',
         'word_emb_path': '../resources/embedding/{}/word_emb.npy'.format(data_name),
         'user_emb_path': '../resources/embedding/{}/user_emb.npy'.format(data_name),
         'word_emb_train': False,

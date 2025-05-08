@@ -20,14 +20,14 @@ def analysis_viz(dpath, data_name='Diabetes'):
     for bar in ax.patches:
         ax.annotate(
             format(bar.get_height(), '.3f'), (bar.get_x() + bar.get_width() / 2, bar.get_height()),
-            ha='center', va='center', size=15, xytext=(0, 8), textcoords='offset points', fontsize=16
+            ha='center', va='center', size=15, xytext=(0, 8), textcoords='offset points'
         )
     ax.set_title(data_name, fontsize=18)
     ax.set_ylabel("F1-score", fontsize=15)
     ax.set_xlabel("Feature Type", fontsize=15)
     # plt.show()
-    opath = '../resources/analyze/{}/{}_quant.pdf'.format(data_name.lower(), data_name.lower())
-    ax.figure.savefig(opath, format='pdf')
+    opath = '../resources/analyze/{}/{}_quant.jpg'.format(data_name.lower(), data_name.lower())
+    ax.figure.savefig(opath, format='jpg')
     plt.close()
     subprocess.run("pdfcrop {} {}".format(opath, opath), shell=True, text=True)
 
@@ -102,7 +102,7 @@ def user_viz_phenotype(data_name, method_name):
     # cmap = sns.cubehelix_palette(as_cmap=True)
     fig, ax = plt.subplots(figsize=a4_dims)
 
-    opath = '../resources/analyze/{}/{}_viz.pdf'.format(data_name, method_name)
+    opath = '../resources/analyze/{}/{}_viz.jpg'.format(data_name, method_name)
     # points = sns.scatterplot()
     # # fig.colorbar(points)
     #
@@ -182,23 +182,23 @@ def user_mortality_viz(data_name, method_name):
     # cmap = sns.cubehelix_palette(as_cmap=True)
     fig, ax = plt.subplots(figsize=a4_dims)
 
-    opath = '../resources/analyze/{}/{}_mortality_viz.pdf'.format(data_name, method_name)
+    opath = '../resources/analyze/{}/{}_mortality_viz.jpg'.format(data_name, method_name)
     viz_plot = sns.scatterplot(data=df, x='x', y='y', hue='label', ax=ax)
     viz_plot.set_ylabel('X', fontsize=20)
     viz_plot.set_xlabel('Y', fontsize=20)
     # plt.setp(ax.get_legend().get_texts(), fontsize=22)
     # plt.setp(ax.get_legend().get_title(), fontsize=22)
-    viz_plot.figure.savefig(opath, format='pdf')
+    viz_plot.figure.savefig(opath, format='jpg')
     plt.close()
 
 
 if __name__ == '__main__':
     quant_path = '../resources/analyze/quant.csv'
-    for dname in ['Diabetes', 'MIMIC-III']:
+    for dname in ['MIMIC-III']:
         analysis_viz(quant_path, dname)
 
-    # for dname in ['diabetes', 'mimic-iii']:
-    #     for method in ['caue_gru']:  # , 'user2vec', 'suisil2user'
-    #         print('Current job {}, {}'.format(dname, method))
-    #         user_viz_phenotype(dname, method)
-    #         user_mortality_viz(dname, method)
+     for dname in ['mimic-iii']:
+         for method in ['caue_gru']:  # , 'user2vec', 'suisil2user'
+             print('Current job {}, {}'.format(dname, method))
+             user_viz_phenotype(dname, method)
+             user_mortality_viz(dname, method)
